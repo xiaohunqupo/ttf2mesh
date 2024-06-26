@@ -3393,6 +3393,7 @@ static int find_triangles_track(mesher_t *m, mvs_t *v1, mvs_t *v2, mes_t *root)
             mts_t *t = v2l->edge->tr[i];
             if (t == NULL) continue;
             mes_t *e = OPPOSITE_EDGE(t, v1);
+            if (IS_CONTOUR_EDGE(e)) continue;
             if (!lines_has_common_point(&v1->x, &v2->x, &e->v1->x, &e->v2->x)) continue;
             tcurr = t;
             ecurr = e;
