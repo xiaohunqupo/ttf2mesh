@@ -648,7 +648,7 @@ static uint32_t ttf_checksum(const void *data, int size)
     return sum;
 }
 
-#define check(cond, code) \
+#define ttf_check(cond, code) \
 if (!(cond)) { result = code; goto error; }
 
 ttf_outline_t *allocate_ttf_outline(int ncontours, int npoints)
@@ -1652,7 +1652,7 @@ int ttf_load_from_mem(const uint8_t *data, int size, ttf_t **output, bool header
     ttf = NULL;
 
     /* check entire font checksum */
-    check(ttf_checksum(data, size) == 0xB1B0AFBA, TTF_ERR_CSUM);
+    ttf_check(ttf_checksum(data, size) == 0xB1B0AFBA, TTF_ERR_CSUM);
 
     /* extract top level tables */
     memset(&s, 0, sizeof(pps_t));
@@ -1660,20 +1660,20 @@ int ttf_load_from_mem(const uint8_t *data, int size, ttf_t **output, bool header
     if (result != 0) goto error;
 
     /* check head table */
-    check(s.shead == sizeof(ttf_head_t), TTF_ERR_FMT);
-    check(big32toh(s.phead->magicNumber) == 0x5F0F3CF5, TTF_ERR_FMT);
+    ttf_check(s.shead == sizeof(ttf_head_t), TTF_ERR_FMT);
+    ttf_check(big32toh(s.phead->magicNumber) == 0x5F0F3CF5, TTF_ERR_FMT);
 
     /* check maxp table */
-    check(s.smaxp >= 6, TTF_ERR_FMT);
-    check(big16toh(((ttf_maxp_t *)s.pmaxp)->verMaj) <= 1, TTF_ERR_UTAB);
+    ttf_check(s.smaxp >= 6, TTF_ERR_FMT);
+    ttf_check(big16toh(((ttf_maxp_t *)s.pmaxp)->verMaj) <= 1, TTF_ERR_UTAB);
 
     /* allocate ttf structure */
     ttf = allocate_ttf_structure(big16toh(s.pmaxp->numGlyphs), headers_only);
-    check(ttf != NULL, TTF_ERR_NOMEM);
+    ttf_check(ttf != NULL, TTF_ERR_NOMEM);
 
     /* check name table */
-    check(s.sname >= (int)sizeof(ttf_name_t), TTF_ERR_FMT);
-    check(parse_name(ttf, (uint8_t *)s.pname, s.sname), TTF_ERR_FMT);
+    ttf_check(s.sname >= (int)sizeof(ttf_name_t), TTF_ERR_FMT);
+    ttf_check(parse_name(ttf, (uint8_t *)s.pname, s.sname), TTF_ERR_FMT);
 
     result = parse_os2_table(ttf, &s);
     if (result != TTF_DONE) goto error;
@@ -1694,17 +1694,17 @@ int ttf_load_from_mem(const uint8_t *data, int size, ttf_t **output, bool header
     if (!headers_only)
     {
         /* check and convert loca table */
-        check(big16toh(s.phead->indexToLocFormat) <= 1, TTF_ERR_FMT);
+        ttf_check(big16toh(s.phead->indexToLocFormat) <= 1, TTF_ERR_FMT);
         if (s.phead->indexToLocFormat == 0)
         {
-            check(s.sloca >= ttf->nglyphs * 2, TTF_ERR_FMT);
+            ttf_check(s.sloca >= ttf->nglyphs * 2, TTF_ERR_FMT);
             s.ploca16 = (uint16_t *)s.ploca;
             for (i = 0; i < ttf->nglyphs; i++)
                 conv16(s.ploca16[i]);
         }
         else
         {
-            check(s.sloca >= ttf->nglyphs * 4, TTF_ERR_FMT);
+            ttf_check(s.sloca >= ttf->nglyphs * 4, TTF_ERR_FMT);
             s.ploca32 = (uint32_t *)s.ploca;
             for (i = 0; i < ttf->nglyphs; i++)
                 conv32(s.ploca32[i]);
@@ -1757,20 +1757,20 @@ int ttf_load_from_file(const char *filename, ttf_t **output, bool headers_only)
 
     /* open file and get it size */
     f = fopen(filename, "rb");
-    check(f != NULL, TTF_ERR_OPEN);
-    check(fread(&sfntVersion, 1, 4, f) == 4, TTF_ERR_FMT);
-    check(big32toh(sfntVersion) == 0x00010000, TTF_ERR_FMT);
-    check(fseek(f, 0, SEEK_END) == 0, TTF_ERR_FMT);
+    ttf_check(f != NULL, TTF_ERR_OPEN);
+    ttf_check(fread(&sfntVersion, 1, 4, f) == 4, TTF_ERR_FMT);
+    ttf_check(big32toh(sfntVersion) == 0x00010000, TTF_ERR_FMT);
+    ttf_check(fseek(f, 0, SEEK_END) == 0, TTF_ERR_FMT);
     size = ftell(f);
-    check(size > 0 && size < (TTF_MAX_FILE * 1024 * 1024), TTF_ERR_SIZE);
-    check(fseek(f, 0, SEEK_SET) == 0, TTF_ERR_FMT);
+    ttf_check(size > 0 && size < (TTF_MAX_FILE * 1024 * 1024), TTF_ERR_SIZE);
+    ttf_check(fseek(f, 0, SEEK_SET) == 0, TTF_ERR_FMT);
 
     /* allocate memory to file content */
     data = (uint8_t *)malloc(size);
-    check(data != NULL, TTF_ERR_NOMEM);
+    ttf_check(data != NULL, TTF_ERR_NOMEM);
 
     /* read file content */
-    check(fread(data, 1, size, f) == (size_t)size, TTF_ERR_FMT);
+    ttf_check(fread(data, 1, size, f) == (size_t)size, TTF_ERR_FMT);
 
     fclose(f);
     result = ttf_load_from_mem(data, size, output, headers_only);
